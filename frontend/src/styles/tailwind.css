@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@source '../**/*.{js,ts,jsx,tsx}';
+
+/* Nếu bạn không có tw-animate-css thì tuyệt đối không được để dòng này */
+/* @import 'tw-animate-css'; */
