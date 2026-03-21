@@ -1,119 +1,112 @@
-import { Card, Table, Button, Tag, Typography, Space } from 'antd';
-import { Download, FileSpreadsheet } from 'lucide-react';
-import { useState } from 'react';
+import { Card, Table, Button, Tag, Typography, Space, message } from 'antd';
+import { Download, RefreshCw } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { sensorApi } from '../api/api'; 
 
 const { Title, Text } = Typography;
 
-// Mock data for the table
-const generateMockData = () => {
-  const devices = ['Temp Sensor', 'Humidity Sensor', 'Soil Sensor', 'Light Sensor'];
-  const parameters = ['Temperature', 'Air Humidity', 'Soil Moisture', 'Light Intensity'];
-  const units = ['°C', '%', '%', 'lux'];
-  const statuses = ['normal', 'normal', 'normal', 'warning'];
-
-  const data = [];
-  const now = Date.now();
-
-  for (let i = 0; i < 50; i++) {
-    const index = i % 4;
-    const timestamp = new Date(now - i * 15 * 60 * 1000); // Every 15 minutes
-    
-    let value = 0;
-    if (parameters[index] === 'Temperature') value = 20 + Math.random() * 8;
-    else if (parameters[index] === 'Air Humidity') value = 55 + Math.random() * 20;
-    else if (parameters[index] === 'Soil Moisture') value = 35 + Math.random() * 20;
-    else value = 700 + Math.random() * 300;
-
-    data.push({
-      key: `data-${i}`,
-      timestamp: timestamp.toLocaleString('en-US', {
-        month: 'short',
-        day: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
-      deviceId: devices[index],
-      parameter: parameters[index],
-      value: parseFloat(value.toFixed(1)),
-      unit: units[index],
-      status: value > 70 || value < 15 ? 'warning' : statuses[index],
-    });
-  }
-
-  return data;
-};
-
 export function DataHistory() {
-  const [data] = useState(generateMockData());
+  const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const exportToCSV = () => {
-    setLoading(true);
-    
-    // Simulate export process
-    setTimeout(() => {
-      const headers = ['Timestamp', 'Device ID', 'Parameter', 'Value', 'Unit', 'Status'];
-      const csvContent = [
-        headers.join(','),
-        ...data.map((row) =>
-          [row.timestamp, row.deviceId, row.parameter, row.value, row.unit, row.status].join(',')
-        ),
-      ].join('\n');
-
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `farm_data_${Date.now()}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+  // Hàm chuyển đổi dữ liệu từ cấu trúc MongoDB (Ngang) sang Table Antd (Dọc)
+  const formatDataForTable = (rawList) => {
+    const formatted = [];
+    rawList.forEach((entry) => {
+      const time = new Date(entry.timestamp).toLocaleString('vi-VN');
       
-      setLoading(false);
-    }, 500);
+      const sensors = [
+        { label: 'Nhiệt độ', value: entry.temperature, unit: '°C', id: 'Temp-01' },
+        { label: 'Độ ẩm khí', value: entry.airHumidity, unit: '%', id: 'Humi-01' },
+        { label: 'Độ ẩm đất', value: entry.soilMoisture, unit: '%', id: 'Soil-01' },
+        { label: 'Ánh sáng', value: entry.light, unit: 'lux', id: 'Light-01' }
+      ];
+
+      sensors.forEach((s, sIdx) => {
+        let status = 'normal';
+        if (s.label === 'Nhiệt độ' && (s.value > 35 || s.value < 15)) status = 'warning';
+        if (s.label === 'Độ ẩm đất' && s.value < 30) status = 'warning';
+        if (s.label === 'Độ ẩm đất' && s.value < 10) status = 'critical';
+
+        formatted.push({
+          key: `${entry._id}-${sIdx}`,
+          timestamp: time,
+          rawTime: new Date(entry.timestamp).getTime(),
+          deviceId: s.id,
+          parameter: s.label,
+          value: s.value,
+          unit: s.unit,
+          status: status,
+        });
+      });
+    });
+    return formatted;
   };
 
-  const exportToExcel = () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
-    
-    // Mock Excel export - in production, use a library like xlsx
-    setTimeout(() => {
-      console.log('Exporting to Excel format...');
-      alert('Excel export would use a library like xlsx in production');
+    try {
+      const res = await sensorApi.getHistory();
+      setData(formatDataForTable(res.data));
+    } catch (err) {
+      message.error("Không thể tải dữ liệu từ Server!");
+    } finally {
       setLoading(false);
-    }, 500);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const exportToCSV = () => {
+    if (data.length === 0) return message.warning("Không có dữ liệu để xuất!");
+    
+    const headers = ['Thời gian', 'Mã thiết bị', 'Thông số', 'Giá trị', 'Đơn vị', 'Trạng thái'];
+    const csvContent = [
+      headers.join(','),
+      ...data.map((row) =>
+        [row.timestamp, row.deviceId, row.parameter, row.value, row.unit, row.status].join(',')
+      ),
+    ].join('\n');
+
+    const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.body.appendChild(document.createElement('a'));
+    link.href = url;
+    link.download = `FarmData_History_${new Date().getTime()}.csv`;
+    link.click();
+    document.body.removeChild(link);
   };
 
   const columns = [
     {
-      title: 'Timestamp',
+      title: 'Thời gian',
       dataIndex: 'timestamp',
       key: 'timestamp',
       width: 200,
-      sorter: (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+      sorter: (a, b) => a.rawTime - b.rawTime,
       defaultSortOrder: 'descend',
     },
     {
-      title: 'Device ID',
+      title: 'Mã thiết bị',
       dataIndex: 'deviceId',
       key: 'deviceId',
       filters: [
-        { text: 'Temp Sensor', value: 'Temp Sensor' },
-        { text: 'Humidity Sensor', value: 'Humidity Sensor' },
-        { text: 'Soil Sensor', value: 'Soil Sensor' },
-        { text: 'Light Sensor', value: 'Light Sensor' },
+        { text: 'Temp Sensor', value: 'Temp-01' },
+        { text: 'Humi Sensor', value: 'Humi-01' },
+        { text: 'Soil Sensor', value: 'Soil-01' },
+        { text: 'Light Sensor', value: 'Light-01' },
       ],
       onFilter: (value, record) => record.deviceId === value,
     },
     {
-      title: 'Parameter',
+      title: 'Thông số',
       dataIndex: 'parameter',
       key: 'parameter',
     },
     {
-      title: 'Value',
+      title: 'Giá trị',
       key: 'value',
       render: (_, record) => (
         <Text strong style={{ color: '#1f2937' }}>
@@ -122,7 +115,7 @@ export function DataHistory() {
       ),
     },
     {
-      title: 'Status',
+      title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
       filters: [
@@ -147,43 +140,29 @@ export function DataHistory() {
   ];
 
   return (
-    <div>
-      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+    <div style={{ padding: '2px' }}>
+      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <Title level={3} style={{ margin: 0, color: '#1f2937' }}>
-            Data History
+            Lịch sử dữ liệu
           </Title>
-          <Text style={{ color: '#6b7280' }}>Historical sensor data and logs</Text>
+          <Text style={{ color: '#6b7280' }}>Dữ liệu chi tiết từ các cảm biến theo thời gian</Text>
         </div>
         <Space>
+          <Button 
+            icon={<RefreshCw size={16} />} 
+            onClick={fetchData} 
+            loading={loading}
+            style={{ borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            Làm mới
+          </Button>
           <Button
             icon={<Download size={16} />}
             onClick={exportToCSV}
-            loading={loading}
-            style={{
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
+            style={{ borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            Export CSV
-          </Button>
-          <Button
-            type="primary"
-            icon={<FileSpreadsheet size={16} />}
-            onClick={exportToExcel}
-            loading={loading}
-            style={{
-              borderRadius: '8px',
-              background: '#22C55E',
-              borderColor: '#22C55E',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            Export Excel
+            Xuất CSV
           </Button>
         </Space>
       </div>
@@ -198,16 +177,15 @@ export function DataHistory() {
         <Table
           columns={columns}
           dataSource={data}
+          loading={loading}
           pagination={{
-            pageSize: 10,
+            pageSize: 12,
             showSizeChanger: true,
-            showTotal: (total) => `Total ${total} records`,
-            style: { marginTop: '16px' },
+            pageSizeOptions: ['12', '24', '48'],
+            showTotal: (total) => `Tổng cộng ${total} bản ghi`,
           }}
           scroll={{ x: 800 }}
-          style={{
-            fontSize: '14px',
-          }}
+          style={{ fontSize: '14px' }}
         />
       </Card>
     </div>

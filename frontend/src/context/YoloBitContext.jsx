@@ -1,50 +1,43 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
+import { sensorApi } from '../api/api';
 
-const YoloBitContext = createContext(undefined);
+const YoloBitContext = createContext();
 
-export function YoloBitProvider({ children }) {
-  const [isConnected, setIsConnected] = useState(true); // Default to connected for demo
+export const YoloBitProvider = ({ children }) => {
   const [sensorData, setSensorData] = useState({
-    temperature: 24.5,
-    airHumidity: 65,
-    soilMoisture: 42,
-    light: 850,
-  });
-  const [deviceControls, setDeviceControls] = useState({
-    waterPump: false,
-    ledGrowLight: true,
-    exhaustFan: false,
-    servoRoof: true,
+    temperature: 0, airHumidity: 0, soilMoisture: 0, light: 0
   });
 
-  const updateSensorData = (data) => {
-    setSensorData((prev) => ({ ...prev, ...data }));
+  const updateData = async () => {
+    try {
+      const res = await sensorApi.getHistory();
+      if (res.data && res.data.length > 0) {
+        const latest = res.data[res.data.length - 1];
+        setSensorData(latest);
+      }
+    } catch (err) {
+      console.error("Kết nối Backend thất bại");
+    }
   };
 
-  const updateDeviceControls = (controls) => {
-    setDeviceControls((prev) => ({ ...prev, ...controls }));
-  };
+  // useEffect(() => {
+  //   updateData();
+  //   const timer = setInterval(updateData, 5000);
+  //   return () => clearInterval(timer);
+  // }, []);
+  useEffect(() => {
+    updateData();
+    const REFRESH_INTERVAL = 5 * 60 * 1000; 
+
+    const timer = setInterval(updateData, REFRESH_INTERVAL);
+    return () => clearInterval(timer);
+}, []);
 
   return (
-    <YoloBitContext.Provider
-      value={{
-        isConnected,
-        setIsConnected,
-        sensorData,
-        updateSensorData,
-        deviceControls,
-        updateDeviceControls,
-      }}
-    >
+    <YoloBitContext.Provider value={{ sensorData }}>
       {children}
     </YoloBitContext.Provider>
   );
-}
+};
 
-export function useYoloBit() {
-  const context = useContext(YoloBitContext);
-  if (context === undefined) {
-    throw new Error('useYoloBit must be used within a YoloBitProvider');
-  }
-  return context;
-}
+export const useYoloBit = () => useContext(YoloBitContext);
