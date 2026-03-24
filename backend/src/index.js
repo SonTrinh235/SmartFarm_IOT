@@ -1,21 +1,27 @@
 const express = require('express');
 const cors = require('cors');
-const mongoose = require('mongoose');
-const apiRoutes = require('./routes');
-const connectMQTT = require('./mqtt');
 require('dotenv').config();
 
+const connectDB = require('./config'); 
+const setupRoutes = require('./controller'); 
+const connectMQTT = require('./mqtt');
+
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('🍃 MongoDB Connected'))
-  .catch(err => console.log(err));
+connectDB();
 
-app.use('/api', apiRoutes);
+app.get('/', (req, res) => {
+  res.send('🚀 Smart Farm API is running');
+});
+
+setupRoutes(app); 
 
 connectMQTT();
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server ready at port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`🚀 Server ready at port ${PORT}`);
+});
