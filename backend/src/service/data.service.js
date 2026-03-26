@@ -4,6 +4,10 @@ const getHistory = async () => {
     return await Sensor.find().sort({ timestamp: -1 }).limit(20);
 };
 
+const getLatest = async () => {
+    return await Sensor.findOne().sort({ timestamp: -1 });
+};
+
 const saveSensorData = async (data) => {
     try {
         const newEntry = new Sensor(data);
@@ -24,4 +28,9 @@ const isSystemOnline = async () => {
     return diffInMinutes < 2;
 };
 
-module.exports = { saveSensorData, getHistory, isSystemOnline };
+module.exports = { 
+    saveSensorData, 
+    getHistory, 
+    getLatest, 
+    isSystemOnline 
+};

@@ -1,0 +1,51 @@
+.history-container {
+    padding: 2px;
+  }
+  
+  .history-header {
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .history-header-subtitle {
+    color: #6b7280;
+  }
+  
+  .history-card {
+    border-radius: 12px;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  }
+  
+  .history-refresh-btn, .history-export-btn {
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  
+  .history-table .ant-table {
+    font-size: 14px;
+  }
+  
+  .history-table .ant-table-thead > tr > th {
+    background-color: #f9fafb;
+    color: #4b5563;
+    font-weight: 600;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  
+  .history-table .ant-table-tbody > tr:hover > td {
+    background-color: #f0fdf4 !important;
+  }
+  
+  .history-status-tag {
+    border-radius: 6px;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  
+  .value-text {
+    color: #1f2937;
+  }

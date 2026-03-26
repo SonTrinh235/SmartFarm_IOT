@@ -7,4 +7,11 @@ export const sensorApi = {
 
 export const deviceApi = {
   toggleDevice: (data) => axiosInstance.post('/controls', data),
+  
+  controlFan: (value) => axiosInstance.post('/equipment/fan', { value }),
+  controlPump: (value) => axiosInstance.post('/equipment/pump', { value }),
+};
+
+export const assistantApi = {
+  chat: (message) => axiosInstance.post('/assistant/chat', { message }),
 };
