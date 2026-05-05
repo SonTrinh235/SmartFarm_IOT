@@ -1,8 +1,9 @@
 import { Card, Input, Button, Typography, Avatar, Space, Tooltip } from 'antd';
 import { Send, Bot, User, Droplets, Thermometer, AlertCircle, CheckCircle, Trash2 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown'; // Đảm bảo đã chạy: npm install react-markdown
 import { assistantApi } from '../api/api';
-import './CSS/Assistant.css'; // Import file CSS vừa tạo
+import './CSS/Assistant.css';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -77,13 +78,12 @@ export function Assistant() {
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (err) {
       console.error("Assistant Error:", err);
-      const errorMessage = {
+      setMessages((prev) => [...prev, {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
         content: "Sorry, I'm having trouble connecting to the AI server.",
         timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+      }]);
     } finally {
       setIsTyping(false);
     }
@@ -94,7 +94,7 @@ export function Assistant() {
     setMessages([{
       id: '1',
       type: 'assistant',
-      content: "Chat history has been cleared. How can I assist you today?",
+      content: "Lịch sử hội thoại đã được xóa.",
       timestamp: new Date(),
     }]);
   };
@@ -117,12 +117,7 @@ export function Assistant() {
           <Text className="assistant-header-subtitle">Get intelligent insights and recommendations</Text>
         </div>
         <Tooltip title="Clear chat history">
-          <Button 
-            danger 
-            type="text" 
-            icon={<Trash2 size={20} />} 
-            onClick={handleClearHistory}
-          />
+          <Button danger type="text" icon={<Trash2 size={20} />} onClick={handleClearHistory} />
         </Tooltip>
       </div>
 
@@ -162,9 +157,10 @@ export function Assistant() {
                   boxShadow: message.type === 'assistant' ? '0 1px 2px 0 rgb(0 0 0 / 0.05)' : 'none',
                 }}
               >
-                <Text className="message-text" style={{ color: message.type === 'user' ? '#ffffff' : '#1f2937' }}>
-                  {message.content}
-                </Text>
+                <div className="markdown-content">
+                  <ReactMarkdown>{message.content}</ReactMarkdown>
+                </div>
+                
                 <div className="message-time" style={{ color: message.type === 'user' ? 'rgba(255,255,255,0.7)' : '#9ca3af' }}>
                   {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </div>

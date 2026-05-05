@@ -40,7 +40,7 @@ const connectMQTT = () => {
 
         if (Object.keys(updateField).length > 0) {
             try {
-                /* CHỈNH THỜI GIAN Ở ĐÂY:
+                /* 
                    --> 5 * 60 * 1000 = 300000ms (5p)
                 */
                 const TIME_WINDOW = 5 * 60 * 1000; 

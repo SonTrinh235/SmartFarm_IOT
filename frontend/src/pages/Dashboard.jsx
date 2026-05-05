@@ -4,9 +4,11 @@ import { Thermometer, Droplets, Sprout, Sun, Power } from 'lucide-react';
 import { useYoloBit } from '../context/YoloBitContext.jsx';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { sensorApi, deviceApi } from '../api/api';
-import './CSS/Dashboard.css';
+import '../pages/CSS/Dashboard.css';
 
 const { Title, Text } = Typography;
+
+const AUTO_REFRESH_INTERVAL = 3000;
 
 export function Dashboard() {
   const { setSensorData } = useYoloBit();
@@ -28,28 +30,33 @@ export function Dashboard() {
         sensorApi.getHistory()
       ]);
 
-      setLocalData(latest.data);
-      if (setSensorData) setSensorData(latest.data);
+      if (latest?.data) {
+        setLocalData(latest.data);
+        if (setSensorData) setSensorData(latest.data);
+      }
 
-      const formatted = history.data.slice(-24).reverse().map(item => ({
-        time: new Date(item.timestamp).toLocaleTimeString('vi-VN', {
-          hour: '2-digit',
-          minute: '2-digit'
-        }),
-        temperature: item.temperature,
-        humidity: item.airHumidity,
-        soilMoisture: item.soilMoisture,
-        light: item.light,
-      }));
-      setHistoricalData(formatted);
+      if (history?.data) {
+        const formatted = history.data.slice(-24).reverse().map(item => ({
+          time: new Date(item.timestamp).toLocaleTimeString('vi-VN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+          }),
+          temperature: item.temperature,
+          humidity: item.airHumidity,
+          soilMoisture: item.soilMoisture,
+          light: item.light,
+        }));
+        setHistoricalData(formatted);
+      }
     } catch (err) {
-      console.error(err);
+      console.error("Lỗi cập nhật dữ liệu:", err);
     }
   }, [setSensorData]);
 
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 30000);
+    fetchData(); 
+    const interval = setInterval(fetchData, AUTO_REFRESH_INTERVAL);
     return () => clearInterval(interval);
   }, [fetchData]);
 
@@ -110,9 +117,14 @@ export function Dashboard() {
       {contextHolder}
       <div className="header-section">
         <Title level={3} style={{ margin: 0 }}>Hệ thống giám sát</Title>
-        <Text type="secondary">
-          {localData?.isOnline ? "Trạm đang kết nối" : "Mất kết nối với thiết bị"}
-        </Text>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text type={localData?.isOnline ? "success" : "danger"}>
+            {localData?.isOnline ? "● Trạm đang kết nối" : "○ Mất kết nối với thiết bị"}
+          </Text>
+          <Text type="secondary" style={{ fontSize: '12px' }}>
+            Cập nhật lần cuối: {new Date().toLocaleTimeString()}
+          </Text>
+        </div>
       </div>
 
       <Row gutter={[16, 16]} className="stat-row">
@@ -122,18 +134,18 @@ export function Dashboard() {
         {renderStatCard('Ánh sáng', localData?.light, ' lux', '#6366F1', '#EEF2FF', 'Cảm biến ánh sáng', Sun)}
       </Row>
 
-      <Card title={<Text strong>Biểu đồ xu hướng thực tế</Text>} variant="none" className="chart-card">
+      <Card title={<Text strong>Biểu đồ xu hướng thực tế (Auto-sync)</Text>} variant="none" className="chart-card">
         <div className="chart-wrapper">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={historicalData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-              <XAxis dataKey="time" tick={{fontSize: 12}} stroke="#9ca3af" axisLine={false} tickLine={false} />
+              <XAxis dataKey="time" tick={{fontSize: 10}} stroke="#9ca3af" axisLine={false} tickLine={false} />
               <YAxis tick={{fontSize: 12}} stroke="#9ca3af" axisLine={false} tickLine={false} />
               <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
               <Legend iconType="circle" />
-              <Line type="monotone" dataKey="temperature" stroke="#3B82F6" strokeWidth={3} dot={false} name="Nhiệt độ (°C)" />
-              <Line type="monotone" dataKey="humidity" stroke="#10B981" strokeWidth={3} dot={false} name="Độ ẩm khí (%)" />
-              <Line type="monotone" dataKey="soilMoisture" stroke="#F59E0B" strokeWidth={3} dot={false} name="Độ ẩm đất (%)" />
+              <Line isAnimationActive={false} type="monotone" dataKey="temperature" stroke="#3B82F6" strokeWidth={3} dot={false} name="Nhiệt độ (°C)" />
+              <Line isAnimationActive={false} type="monotone" dataKey="humidity" stroke="#10B981" strokeWidth={3} dot={false} name="Độ ẩm khí (%)" />
+              <Line isAnimationActive={false} type="monotone" dataKey="soilMoisture" stroke="#F59E0B" strokeWidth={3} dot={false} name="Độ ẩm đất (%)" />
             </LineChart>
           </ResponsiveContainer>
         </div>
