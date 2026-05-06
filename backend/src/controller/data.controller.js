@@ -38,4 +38,18 @@ router.post('/history', async (req, res) => {
     }
 });
 
+router.get('/history/:id', async (req, res) => {
+    try {
+        const { id } = req.params; 
+        const data = await Sensor.findById(id);
+
+        if (!data) {
+            return res.status(404).json({ message: "Không tìm thấy dữ liệu với ID này" });
+        }
+
+        res.status(200).json(data);
+    } catch (error) {
+        res.status(400).json({ message: "ID không hợp lệ hoặc lỗi truy vấn", error: error.message });
+    }
+});
 module.exports = router;

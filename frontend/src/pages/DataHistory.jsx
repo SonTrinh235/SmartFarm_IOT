@@ -1,5 +1,5 @@
-import { Card, Table, Button, Tag, Typography, Space, message } from 'antd';
-import { Download, RefreshCw } from 'lucide-react';
+import { Card, Table, Button, Tag, Typography, Space, message, Tooltip } from 'antd';
+import { Download, RefreshCw, Eye} from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import { sensorApi } from '../api/api'; 
 import './CSS/DataHistory.css';
@@ -37,7 +37,8 @@ export function DataHistory() {
         }
       
         formatted.push({
-          key: `${entry._id}-${sIdx}`,
+          key: `${entry._id}-${s.id}`,
+          rawId: entry._id,
           timestamp: time,
           rawTime: new Date(entry.timestamp).getTime(),
           deviceId: s.id,
@@ -66,6 +67,31 @@ export function DataHistory() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const handleViewDetail = async (id) => {
+    try {
+      const res = await sensorApi.getById(id);
+      const d = res.data;
+      
+      const timeStr = new Date(d.timestamp).toLocaleTimeString('vi-VN');
+  
+      message.info({
+        content: (
+          <div style={{ textAlign: 'left' }}>
+            <Text strong>Chi tiết tại {timeStr}:</Text><br/>
+            • Nhiệt độ: {d.temperature}°C<br/>
+            • Độ ẩm khí: {d.airHumidity}%<br/>
+            • Độ ẩm đất: {d.soilMoisture}%<br/>
+            • Ánh sáng: {d.light} lux
+          </div>
+        ),
+        duration: 5, 
+      });
+  
+    } catch (err) {
+      message.error("Không tìm thấy bản ghi này!");
+    }
+  };
 
   const exportToCSV = () => {
     if (data.length === 0) return message.warning("Không có dữ liệu để xuất!");
@@ -134,10 +160,27 @@ export function DataHistory() {
         );
       },
     },
+    {
+      title: 'Thao tác',
+      key: 'actions',
+      width: 120,
+      render: (_, record) => (
+        <Space size="middle">
+          <Tooltip title="Xem chi tiết">
+            <Button 
+              type="text" 
+              icon={<Eye size={18} color="#3B82F6" />} 
+              onClick={() => handleViewDetail(record.rawId)}
+            />
+          </Tooltip>
+        </Space>
+      ),
+    },
   ];
 
   return (
     <div className="history-container">
+      {/* Giữ nguyên phần header và card */}
       <div className="history-header">
         <div>
           <Title level={3} style={{ margin: 0 }}>Lịch sử dữ liệu</Title>
