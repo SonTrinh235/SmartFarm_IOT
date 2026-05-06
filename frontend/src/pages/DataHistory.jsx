@@ -1,12 +1,14 @@
 import { Card, Table, Button, Tag, Typography, Space, message, Tooltip } from 'antd';
-import { Download, RefreshCw, Eye} from 'lucide-react';
+import { Download, RefreshCw, Eye, Bot, Sparkles, Scan, User} from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { sensorApi } from '../api/api'; 
 import './CSS/DataHistory.css';
 
 const { Title, Text } = Typography;
 
 export function DataHistory() {
+  const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -72,24 +74,41 @@ export function DataHistory() {
     try {
       const res = await sensorApi.getById(id);
       const d = res.data;
-      
-      const timeStr = new Date(d.timestamp).toLocaleTimeString('vi-VN');
-  
+      const timeStr = new Date(d.timestamp).toLocaleString('vi-VN');
+
       message.info({
         content: (
-          <div style={{ textAlign: 'left' }}>
-            <Text strong>Chi tiết tại {timeStr}:</Text><br/>
-            • Nhiệt độ: {d.temperature}°C<br/>
-            • Độ ẩm khí: {d.airHumidity}%<br/>
-            • Độ ẩm đất: {d.soilMoisture}%<br/>
-            • Ánh sáng: {d.light} lux
+          <div className="detail-content-wrapper">
+            <Text strong style={{ fontSize: '15px', display: 'block', marginBottom: '8px' }}>
+              Thông tin chi tiết tại {timeStr}:
+            </Text>
+            <div className="detail-item"><span>- Nhiệt độ:</span> <Text strong>{d.temperature}°C</Text></div>
+            <div className="detail-item"><span>- Độ ẩm khí:</span> <Text strong>{d.airHumidity}%</Text></div>
+            <div className="detail-item"><span>- Độ ẩm đất:</span> <Text strong>{d.soilMoisture}%</Text></div>
+            <div className="detail-item"><span>- Ánh sáng:</span> <Text strong>{d.light} lux</Text></div>
+            
+            <div className="detail-action-footer">
+              <Button
+                type="primary" 
+                className="ai-analyze-btn"
+                size="middle"
+                icon={<Bot size={16} />}
+                onClick={() => {
+                  navigate('/assistant', { state: { sensorData: d, analyzeAt: timeStr } });
+                  message.destroy();
+                }}
+              >
+                Phân tích
+              </Button>
+            </div>
           </div>
         ),
-        duration: 5, 
+        duration: 15,
+        icon: <Scan size={36} color= "#22C55E" > <User size={16} x={4} y={4} color="#22C55E" /> </Scan>,
+        width: 350
       });
-  
     } catch (err) {
-      message.error("Không tìm thấy bản ghi này!");
+      message.error("Lỗi khi lấy thông tin chi tiết!");
     }
   };
 
@@ -180,7 +199,6 @@ export function DataHistory() {
 
   return (
     <div className="history-container">
-      {/* Giữ nguyên phần header và card */}
       <div className="history-header">
         <div>
           <Title level={3} style={{ margin: 0 }}>Lịch sử dữ liệu</Title>

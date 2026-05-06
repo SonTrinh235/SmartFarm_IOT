@@ -49,3 +49,40 @@
   .value-text {
     color: #1f2937;
   }
+
+.detail-content-wrapper {
+  text-align: left;
+  line-height: 1.6;
+}
+
+.detail-action-footer {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px dashed #e5e7eb;
+  text-align: right;
+}
+
+.ai-analyze-btn {
+  margin-left: 150px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #22C55E;
+  border-color: #22C55E;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.ai-analyze-btn:hover {
+  background-color: #16a34a !important;
+  border-color: #16a34a !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}

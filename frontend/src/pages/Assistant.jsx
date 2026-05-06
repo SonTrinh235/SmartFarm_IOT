@@ -1,7 +1,8 @@
 import { Card, Input, Button, Typography, Avatar, Space, Tooltip } from 'antd';
 import { Send, Bot, User, Droplets, Thermometer, AlertCircle, CheckCircle, Trash2 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown'; // Đảm bảo đã chạy: npm install react-markdown
+import { useLocation } from 'react-router-dom'; // Thêm import này
+import ReactMarkdown from 'react-markdown';
 import { assistantApi } from '../api/api';
 import './CSS/Assistant.css';
 
@@ -16,6 +17,9 @@ const quickActions = [
 ];
 
 export function Assistant() {
+  const location = useLocation();
+  const hasAnalyzed = useRef(false);
+
   const [messages, setMessages] = useState(() => {
     const savedChat = localStorage.getItem('smart_farm_chat_history');
     if (savedChat) {
@@ -52,6 +56,23 @@ export function Assistant() {
     scrollToBottom();
   }, [isTyping]);
 
+  useEffect(() => {
+    if (location.state?.sensorData && !hasAnalyzed.current) {
+      const { sensorData, analyzeAt } = location.state;
+      
+      const autoPrompt = `Hãy phân tích dữ liệu cảm biến tại thời điểm ${analyzeAt}: 
+      Nhiệt độ ${sensorData.temperature}°C, 
+      độ ẩm khí ${sensorData.airHumidity}%, 
+      độ ẩm đất ${sensorData.soilMoisture}%, 
+      ánh sáng ${sensorData.light} lux. 
+      Tình trạng này có tốt cho cây không và cần làm gì?`;
+
+      handleSend(autoPrompt);
+      hasAnalyzed.current = true;
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
+
   const handleSend = async (messageText) => {
     const textToSend = typeof messageText === 'string' ? messageText : inputValue.trim();
     if (!textToSend) return;
@@ -81,7 +102,7 @@ export function Assistant() {
       setMessages((prev) => [...prev, {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
-        content: "Sorry, I'm having trouble connecting to the AI server.",
+        content: "Xin lỗi, tôi đang gặp khó khăn khi kết nối với máy chủ AI.",
         timestamp: new Date(),
       }]);
     } finally {
@@ -97,6 +118,7 @@ export function Assistant() {
       content: "Lịch sử hội thoại đã được xóa.",
       timestamp: new Date(),
     }]);
+    hasAnalyzed.current = false; // Reset ref khi xóa lịch sử
   };
 
   const handleQuickAction = (action) => {
@@ -160,7 +182,6 @@ export function Assistant() {
                 <div className="markdown-content">
                   <ReactMarkdown>{message.content}</ReactMarkdown>
                 </div>
-                
                 <div className="message-time" style={{ color: message.type === 'user' ? 'rgba(255,255,255,0.7)' : '#9ca3af' }}>
                   {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </div>
